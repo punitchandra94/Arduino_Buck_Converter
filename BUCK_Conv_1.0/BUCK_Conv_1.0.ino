@@ -8,7 +8,7 @@ const int pin_d6 = 6;
 const int pin_d7 = 7;
 const int pin_BL = 10;
 LiquidCrystal lcd(pin_RS, pin_EN, pin_d4, pin_d5, pin_d6, pin_d7);
-int PWM = 3, voltage = 100;
+int PWM = 3, pwm = 0, set_Volt=0, set_Curr=0;
 //Button
 int U_Button = 1;
 int D_Button = 2;
@@ -37,22 +37,28 @@ int button_sel() {
   return 0;
 }
 
+void control_SetVolt(int set_volt, int set_Curr){
+// need to adjust the pwm accordingly 
+// compare voltage and current sensor input and adjust the pwm  
+}
+
+// Before this current and voltage info should be filtered
 void set_pwm(int sel_btn_state) {
   if (sel_btn_state == U_Button)
-    voltage = voltage + 5;
+    pwm = pwm + 1;
   if (sel_btn_state == D_Button)
-    voltage = voltage - 5;
+    pwm = pwm - 1;
 
-  if (voltage > 1024)
-    voltage = 1024;
-  if (voltage < 0)
-    voltage = 0;
+  if (pwm > 1024)
+    pwm = 1024;
+  if (pwm < 0)
+    pwm = 0;
 
   lcd.setCursor(2, 0);
   lcd.print("PWM: ");
-  lcd.print(voltage);
+  lcd.print(pwm);
 
-  int VALUE = map(voltage, 0, 1024, 0, 254);
+  int VALUE = map(pwm, 0, 1024, 0, 254);
   analogWrite(PWM, VALUE);
 
   lcd.setCursor(2, 1);
@@ -64,6 +70,7 @@ void set_pwm(int sel_btn_state) {
 void sub_proc(int cursor, int sel_screen) {
   int btn_state = 0;
 
+// SET VOLTAGE SCREEN
   if (cursor == 0 && sel_screen == 1) {
     while (1) {
       btn_state = button_sel();
@@ -72,27 +79,40 @@ void sub_proc(int cursor, int sel_screen) {
       lcd.print("<");
 
       if (btn_state == U_Button) {
-        set_pwm(U_Button);
+        control_SetVolt( set_Volt + 1, set_Curr );   
+      //   set_pwm(U_Button);
       }
       if (btn_state == D_Button) {
-        set_pwm(D_Button);
+        control_SetVolt( set_Volt - 1, set_Curr );
+      //   set_pwm(D_Button);
       }
       if (btn_state == L_Button)
         break;
     }
   }
+
+// SET CURRENT SCREEN
   if (cursor == 1 && sel_screen == 1) {
     while (1) {
       lcd.setCursor(0, 0);
       lcd.print("<");
-      lcd.setCursor(3, 0);
-      lcd.print("Set Curr: NIY");
+      
+       if (btn_state == U_Button) {
+        control_SetVolt( set_Volt, set_Curr + 1 );   
+      //   set_pwm(U_Button);
+      }
+      if (btn_state == D_Button) {
+        control_SetVolt( set_Volt, set_Curr - 1 );
+      //   set_pwm(D_Button);
+      }
+
       if (button_sel() == L_Button)
         break;
     }
   }
 }
 
+//SETUP
 void setup() {
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);
